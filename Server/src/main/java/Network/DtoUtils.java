@@ -1,4 +1,4 @@
-package Network.Dto;
+package Network;
 
 import Domain.*;
 import Network.Dto.ResponseDto.ReservationDTO;
@@ -6,7 +6,6 @@ import Network.Dto.ResponseDto.SeatDTO;
 import Network.Dto.ResponseDto.TripDTO;
 import Network.Dto.ResponseDto.UserDTO;
 import Util.DateTimeUtils;
-
 import java.util.ArrayList;
 import java.util.List;
 
