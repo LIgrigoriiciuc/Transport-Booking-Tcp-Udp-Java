@@ -1,14 +1,12 @@
 package Service;
 
 
-import Domain.Reservation;
-import Domain.Seat;
-import Domain.Trip;
-import Domain.User;
+import Domain.*;
 import Service.TransactionsLogic.TransactionManager;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public class FacadeService {
 
@@ -38,9 +36,9 @@ public class FacadeService {
         return userService.login(user, pass);
         //});
     }
-    public void logout() {
-        userService.logout();
-    }
+//    public void logout() {
+//        userService.logout();
+//    }
 
     public List<Trip> searchTrips(String destination, LocalDateTime from, LocalDateTime to) {
         return tripService.search(destination, from, to);
@@ -65,5 +63,20 @@ public class FacadeService {
     public List<Reservation> getAllReservations() {
         return reservationService.getAll();
     }
+    public Office getOfficeById(Long id){
+        return officeService.findById(id).orElse(null);
+    }
+    public int countFreeSeats(Long tripId) {
+        return seatService.getFreeByTripId(tripId).size();
+    }
+    public Seat getSeatById(Long seatId) {
+        return seatService.findById(seatId).orElse(null);
+    }
 
+    public User getUserById(Long userId) {
+        return userService.findById(userId).orElse(null);
+    }
+    public List<Integer> getSeatNumbersByReservation(Long reservationId) {
+        return seatService.getSeatNumbersByReservation(reservationId);
+    }
 }

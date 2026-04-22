@@ -22,5 +22,20 @@ public class SeatService extends GenericService<Long, Seat> {
         filter.addFilter("reservation_id", reservationId);
         return filter(filter);
     }
+    public List<Seat> getFreeByTripId(Long tripId) {
+        Filter filter = new Filter();
+        filter.addFilter("trip_id", tripId);
+        filter.addFilter("isReserved", 0);
+        return filter(filter);
+    }
+
+    public List<Integer> getSeatNumbersByReservation(Long reservationId) {
+        Filter filter = new Filter();
+        filter.addFilter("reservation_id", reservationId);
+        return filter(filter).stream()
+                .map(Seat::getNumber)
+                .toList();
+    }
+
 
 }

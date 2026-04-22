@@ -15,7 +15,7 @@ public interface INetworkService {
 
     List<SeatDTO> getSeatsForTrip(GetSeatsDTO dto);
 
-    ReservationDTO makeReservation(MakeReservationDTO dto);
+    void makeReservation(MakeReservationDTO dto);
 
     void cancelReservation(CancelReservationDTO dto);
 

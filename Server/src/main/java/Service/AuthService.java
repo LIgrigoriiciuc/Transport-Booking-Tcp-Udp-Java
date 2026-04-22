@@ -14,7 +14,6 @@ public class AuthService extends GenericService<Long, User> {
 
     private static final int BCRYPT_ROUNDS = 12;
     private final OfficeService officeService;
-    private User loggedInUser = null;
 
     public AuthService(UserRepository repository, OfficeService officeService) {
         super(repository);
@@ -55,11 +54,6 @@ public class AuthService extends GenericService<Long, User> {
         Optional<Office> office = officeService.findById(user.getOfficeId());
         Office o = office.orElseThrow(() -> new RuntimeException("Office not found"));
         user.setOffice(o);
-        loggedInUser = user;
         return user;
-    }
-
-    public void logout() {
-        loggedInUser = null;
     }
 }
