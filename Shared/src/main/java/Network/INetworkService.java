@@ -1,3 +1,5 @@
+package Network;
+
 import Network.Dto.RequestDto.*;
 import Network.Dto.ResponseDto.ReservationDTO;
 import Network.Dto.ResponseDto.SeatDTO;

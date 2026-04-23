@@ -1,10 +1,11 @@
+package Network;
+
 import Domain.*;
 import Network.Dto.RequestDto.*;
 import Network.Dto.ResponseDto.ReservationDTO;
 import Network.Dto.ResponseDto.SeatDTO;
 import Network.Dto.ResponseDto.TripDTO;
 import Network.Dto.ResponseDto.UserDTO;
-import Network.DtoUtils;
 import Service.FacadeService;
 import Util.DateTimeUtils;
 
@@ -13,13 +14,17 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class NetworkServiceImpl implements INetworkService {
     private final FacadeService facade;
     private final Map<Long, UdpTarget> loggedClients = new ConcurrentHashMap<>();
     private final UdpPusher udpPusher;
-    public NetworkServiceImpl(FacadeService facade) {
+    private final ExecutorService pushExecutor = Executors.newFixedThreadPool(5);
+    public NetworkServiceImpl(FacadeService facade, UdpPusher udpPusher) {
         this.facade = facade;
+        this.udpPusher = udpPusher;
     }
 
     @Override
@@ -89,7 +94,12 @@ public class NetworkServiceImpl implements INetworkService {
         return DtoUtils.reservationsToDto(reservations, seatsPerReservation, users, tripIds);
     }
 
-    private void notifyOthers() {
-         loggedClients.forEach(userId -> udpNotifier.notify(addressFor(userId)));
+    private void notifyOthers(Long excludeUserId) {
+        Packet pushPacket = PacketFactory.push();
+        loggedClients.entrySet().stream()
+                .filter(e -> !e.getKey().equals(excludeUserId))
+                .forEach(e -> pushExecutor.execute(
+                        () -> udpPusher.push(e.getValue(), pushPacket)
+                ));
     }
 }
