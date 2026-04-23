@@ -18,28 +18,33 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class NetworkServiceImpl implements INetworkService {
+
     private final FacadeService facade;
-    private final Map<Long, UdpTarget> loggedClients = new ConcurrentHashMap<>();
     private final UdpPusher udpPusher;
+    private final Map<Long, UdpTarget> loggedClients = new ConcurrentHashMap<>();
     private final ExecutorService pushExecutor = Executors.newFixedThreadPool(5);
+
     public NetworkServiceImpl(FacadeService facade, UdpPusher udpPusher) {
-        this.facade = facade;
-        this.udpPusher = udpPusher;
+        this.facade     = facade;
+        this.udpPusher  = udpPusher;
     }
 
-    @Override
-    public synchronized UserDTO login(LoginDTO dto, InetAddress clientAddress) {
+    public synchronized UserDTO login(LoginDTO dto, UdpTarget udpTarget) {
         User user = facade.login(dto.getUsername(), dto.getPassword());
         if (loggedClients.containsKey(user.getId()))
             throw new RuntimeException("User already logged in.");
-        loggedClients.put(user.getId(), clientAddress);
-        //aici e ok
+        loggedClients.put(user.getId(), udpTarget);
         Office office = facade.getOfficeById(user.getOfficeId());
         return DtoUtils.toDto(user, office);
     }
+
     @Override
     public synchronized void logout(LogoutDTO dto) {
         loggedClients.remove(dto.getUserId());
+    }
+
+    public void forceLogout(Long userId) {
+        loggedClients.remove(userId);
     }
 
     @Override
@@ -65,19 +70,21 @@ public class NetworkServiceImpl implements INetworkService {
         List<Seat> seats = dto.getSeatIds().stream()
                 .map(facade::getSeatById)
                 .toList();
-        for(Seat s: seats)
-            if(s.isReserved())
+        for (Seat s : seats)
+            if (s.isReserved())
                 throw new RuntimeException("One of the selected seats is already reserved.");
         facade.makeReservationForSeats(dto.getClientName(), seats, dto.getUserId());
-        notifyOthers();
-}
+        notifyPush();
+    }
+
     @Override
     public synchronized void cancelReservation(CancelReservationDTO dto) {
         if (facade.getReservationById(dto.getReservationId()) == null)
             throw new RuntimeException("Reservation already cancelled.");
         facade.cancelReservation(dto.getReservationId());
-        notifyOthers();
+        notifyPush();
     }
+
     @Override
     public List<ReservationDTO> getAllReservations() {
         List<Reservation> reservations = facade.getAllReservations();
@@ -87,19 +94,15 @@ public class NetworkServiceImpl implements INetworkService {
         List<User> users = reservations.stream()
                 .map(r -> facade.getUserById(r.getUserId()))
                 .toList();
-
         List<Long> tripIds = reservations.stream()
                 .map(r -> facade.getTripIdByReservation(r.getId()))
                 .toList();
         return DtoUtils.reservationsToDto(reservations, seatsPerReservation, users, tripIds);
     }
 
-    private void notifyOthers(Long excludeUserId) {
+    private void notifyPush() {
         Packet pushPacket = PacketFactory.push();
-        loggedClients.entrySet().stream()
-                .filter(e -> !e.getKey().equals(excludeUserId))
-                .forEach(e -> pushExecutor.execute(
-                        () -> udpPusher.push(e.getValue(), pushPacket)
-                ));
+        loggedClients.values()
+                .forEach(target -> udpPusher.push(target, pushPacket));
     }
 }
