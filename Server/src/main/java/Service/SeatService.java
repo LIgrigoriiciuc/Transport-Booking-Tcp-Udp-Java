@@ -6,6 +6,7 @@ import Repository.Filter;
 import Repository.SeatRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public class SeatService extends GenericService<Long, Seat> {
     public SeatService(SeatRepository seatRepository) {
@@ -35,6 +36,12 @@ public class SeatService extends GenericService<Long, Seat> {
         return filter(filter).stream()
                 .map(Seat::getNumber)
                 .toList();
+    }
+
+    public Optional<Long> getTripIdByReservationId(Long reservationId) {
+        return getByReservationId(reservationId).stream()
+                .findFirst()
+                .map(Seat::getTripId);
     }
 
 

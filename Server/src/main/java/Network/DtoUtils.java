@@ -41,6 +41,7 @@ public class DtoUtils {
                 .map(DtoUtils::toDto)
                 .toList();
     }
+    //aici se da office -> f bine... nu se seteaza mai intai in user.
     public static UserDTO toDto(User user, Office office) {
         return new UserDTO(
                 user.getId(),

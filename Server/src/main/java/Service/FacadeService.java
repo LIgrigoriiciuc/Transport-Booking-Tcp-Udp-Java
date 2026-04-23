@@ -72,6 +72,9 @@ public class FacadeService {
     public Seat getSeatById(Long seatId) {
         return seatService.findById(seatId).orElse(null);
     }
+    public Reservation getReservationById(Long reservationId) {
+        return reservationService.findById(reservationId).orElse(null);
+    }
 
     public User getUserById(Long userId) {
         return userService.findById(userId).orElse(null);
@@ -79,4 +82,8 @@ public class FacadeService {
     public List<Integer> getSeatNumbersByReservation(Long reservationId) {
         return seatService.getSeatNumbersByReservation(reservationId);
     }
+    public Long getTripIdByReservation(Long reservationId) {
+        return seatService.getTripIdByReservationId(reservationId).orElse(null);
+    }
+
 }

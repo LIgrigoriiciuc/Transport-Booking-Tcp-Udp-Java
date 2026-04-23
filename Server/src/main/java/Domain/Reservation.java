@@ -24,7 +24,9 @@ public class Reservation extends Entity<Long> {
     public String getClientName() { return clientName; }
     public LocalDateTime getReservationTime() { return reservationTime; }
 
-    public void setUser(User user) {
-        this.user = user;
+
+
+    public Long getUserId() {
+        return userId;
     }
 }

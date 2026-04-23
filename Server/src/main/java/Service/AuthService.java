@@ -53,6 +53,7 @@ public class AuthService extends GenericService<Long, User> {
         }
         Optional<Office> office = officeService.findById(user.getOfficeId());
         Office o = office.orElseThrow(() -> new RuntimeException("Office not found"));
+        //aici trebuie de fapt find office by user nu asa!
         user.setOffice(o);
         return user;
     }

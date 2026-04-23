@@ -16,25 +16,24 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class NetworkServiceImpl implements INetworkService {
     private final FacadeService facade;
-    private final Map<Long, InetAddress> loggedClients = new ConcurrentHashMap<>();
-    private final InetAddress clientAddress;
-    public NetworkServiceImpl(FacadeService facade,
-                              InetAddress clientAddress) {
+    private final Map<Long, UdpTarget> loggedClients = new ConcurrentHashMap<>();
+    private final UdpPusher udpPusher;
+    public NetworkServiceImpl(FacadeService facade) {
         this.facade = facade;
-        this.clientAddress = clientAddress;
     }
-//uuid
+
     @Override
-    public UserDTO login(LoginDTO dto) {
+    public synchronized UserDTO login(LoginDTO dto, InetAddress clientAddress) {
         User user = facade.login(dto.getUsername(), dto.getPassword());
         if (loggedClients.containsKey(user.getId()))
             throw new RuntimeException("User already logged in.");
         loggedClients.put(user.getId(), clientAddress);
+        //aici e ok
         Office office = facade.getOfficeById(user.getOfficeId());
         return DtoUtils.toDto(user, office);
     }
     @Override
-    public void logout(LogoutDTO dto) {
+    public synchronized void logout(LogoutDTO dto) {
         loggedClients.remove(dto.getUserId());
     }
 
@@ -55,17 +54,22 @@ public class NetworkServiceImpl implements INetworkService {
     public List<SeatDTO> getSeatsForTrip(GetSeatsDTO dto) {
         return DtoUtils.seatsToDto(facade.getSeatsForTrip(dto.getTripId()));
     }
-//concurrency!!!!
+
     @Override
-    public void makeReservation(MakeReservationDTO dto) {
+    public synchronized void makeReservation(MakeReservationDTO dto) {
         List<Seat> seats = dto.getSeatIds().stream()
                 .map(facade::getSeatById)
                 .toList();
+        for(Seat s: seats)
+            if(s.isReserved())
+                throw new RuntimeException("One of the selected seats is already reserved.");
         facade.makeReservationForSeats(dto.getClientName(), seats, dto.getUserId());
         notifyOthers();
 }
     @Override
-    public void cancelReservation(CancelReservationDTO dto) {
+    public synchronized void cancelReservation(CancelReservationDTO dto) {
+        if (facade.getReservationById(dto.getReservationId()) == null)
+            throw new RuntimeException("Reservation already cancelled.");
         facade.cancelReservation(dto.getReservationId());
         notifyOthers();
     }
@@ -86,8 +90,6 @@ public class NetworkServiceImpl implements INetworkService {
     }
 
     private void notifyOthers() {
-        loggedClients.entrySet().stream()
-                .filter(e -> !e.getKey().equals(loggedInUser.getId()))
-                .forEach(e -> udpNotifier.notify(e.getValue()));
+         loggedClients.forEach(userId -> udpNotifier.notify(addressFor(userId)));
     }
 }
