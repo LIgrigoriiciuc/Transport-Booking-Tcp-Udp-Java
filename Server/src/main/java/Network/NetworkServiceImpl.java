@@ -9,7 +9,6 @@ import Network.Dto.ResponseDto.UserDTO;
 import Service.FacadeService;
 import Util.DateTimeUtils;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -30,13 +29,18 @@ public class NetworkServiceImpl implements INetworkService {
         this.udpPusher  = udpPusher;
     }
 
-    public synchronized UserDTO login(LoginDTO dto, InetAddress clientIp) {
+    public synchronized UserDTO login(LoginDTO dto) {
         User user = facade.login(dto.getUsername(), dto.getPassword());
         if (loggedClients.containsKey(user.getId()))
             throw new RuntimeException("User already logged in.");
         loggedClients.put(user.getId(), new InetSocketAddress(clientIp, dto.getUdpPort()));
         Office office = facade.getOfficeById(user.getOfficeId());
         return DtoUtils.toDto(user, office);
+    }
+
+    @Override
+    public UserDTO login(LoginDTO dto) {
+        return null;
     }
 
     @Override

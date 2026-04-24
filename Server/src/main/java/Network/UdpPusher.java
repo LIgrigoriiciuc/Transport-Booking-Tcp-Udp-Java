@@ -8,9 +8,9 @@ import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 
-public class UdpNotifier {
+public class UdpPusher {
     private DatagramSocket socket;
-    public UdpNotifier() throws SocketException {
+    public UdpPusher() throws SocketException {
         socket = new DatagramSocket(); // ephemeral port, just for sending
     }
     public void notifyClients(Collection<InetSocketAddress> clients, String notifType) {
