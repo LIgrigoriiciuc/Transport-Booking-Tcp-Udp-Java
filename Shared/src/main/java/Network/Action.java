@@ -1,6 +1,7 @@
 package Network;
 
 public enum Action {
+    CONNECT,       // ← new, sends udpPort right after TCP connect
     LOGIN,
     LOGOUT,
     SEARCH_TRIPS,

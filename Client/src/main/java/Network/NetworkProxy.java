@@ -49,19 +49,27 @@ public class NetworkProxy implements INetworkService, IResponseReceiver, IPushRe
     }
     public void connect() throws IOException {
         tcp = new TcpConnection(host, port);
+
         udpListener = new UdpListenerThread(0, this);
         Thread udpThread = new Thread(udpListener, "udp-listener");
         udpThread.setDaemon(true);
         udpThread.start();
+
         readerThread = new TcpReaderThread(tcp, this);
         Thread tcpThread = new Thread(readerThread, "tcp-reader");
         tcpThread.setDaemon(true);
         tcpThread.start();
+
+        // tell server our UDP port immediately — once, not at every login
+        Packet connectPacket = PacketFactory.connect(new ConnectDTO(udpListener.getPort()));
+        Packet response = sendAndReceive(connectPacket);
+        if (response.getAction() == Action.ERROR)
+            throw new IOException("Connection rejected: " + response.getError());
     }
 
     @Override
     public UserDTO login(LoginDTO dto) {
-        LoginDTO dtoWithPort = new LoginDTO(dto.getUsername(), dto.getPassword(), udpListener.getPort());
+        LoginDTO dtoWithPort = new LoginDTO(dto.getUsername(), dto.getPassword());
         return exchange(PacketFactory.login(dtoWithPort)).getUser();
     }
 

@@ -101,4 +101,10 @@ public class PacketFactory {
         p.setAction(Action.PUSH_UPDATE);
         return p;
     }
+    public static Packet connect(ConnectDTO dto) {
+        Packet p = new Packet();
+        p.setAction(Action.CONNECT);
+        p.setConnectData(dto);
+        return p;
+    }
 }

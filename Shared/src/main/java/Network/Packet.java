@@ -21,6 +21,7 @@ public class Packet {
     private List<TripDTO> trips;
     private List<SeatDTO> seats;
     private List<ReservationDTO> reservations;
+    private ConnectDTO connectData;
 
     public Packet() {
     }
@@ -120,4 +121,6 @@ public class Packet {
     public void setReservations(List<ReservationDTO> reservations) {
         this.reservations = reservations;
     }
+    public ConnectDTO getConnectData() { return connectData; }
+    public void setConnectData(ConnectDTO connectData) { this.connectData = connectData; }
 }

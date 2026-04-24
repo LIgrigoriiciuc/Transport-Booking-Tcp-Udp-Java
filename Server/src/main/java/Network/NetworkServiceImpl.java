@@ -9,10 +9,13 @@ import Network.Dto.ResponseDto.UserDTO;
 import Service.FacadeService;
 import Util.DateTimeUtils;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -21,35 +24,58 @@ public class NetworkServiceImpl implements INetworkService {
 
     private final FacadeService facade;
     private final UdpPusher udpPusher;
-    private final Map<Long, InetSocketAddress> loggedClients = new ConcurrentHashMap<>();
-    private final ExecutorService pushExecutor = Executors.newFixedThreadPool(5);
-
+    private final Map<String, ConnectionSession> sessions = new ConcurrentHashMap<>();
+    private final Object loginLock = new Object();
+    private final Object reservationLock = new Object();
+    private final ExecutorService pushExecutor = Executors.newFixedThreadPool(4);
+    private static final ThreadLocal<String> currentConnectionId = new ThreadLocal<>();
     public NetworkServiceImpl(FacadeService facade, UdpPusher udpPusher) {
-        this.facade     = facade;
-        this.udpPusher  = udpPusher;
+        this.facade = facade;
+        this.udpPusher = udpPusher;
+    }
+    public static void setConnectionId(String id) {
+        currentConnectionId.set(id);
     }
 
-    public synchronized UserDTO login(LoginDTO dto) {
-        User user = facade.login(dto.getUsername(), dto.getPassword());
-        if (loggedClients.containsKey(user.getId()))
-            throw new RuntimeException("User already logged in.");
-        loggedClients.put(user.getId(), new InetSocketAddress(clientIp, dto.getUdpPort()));
-        Office office = facade.getOfficeById(user.getOfficeId());
-        return DtoUtils.toDto(user, office);
+    private String getConnectionId() {
+        return currentConnectionId.get();
+    }
+
+    public String registerConnection(InetAddress ip, int udpPort) {
+        String id = UUID.randomUUID().toString();
+        sessions.put(id, new ConnectionSession(id, new InetSocketAddress(ip, udpPort)));
+        return id;
     }
 
     @Override
     public UserDTO login(LoginDTO dto) {
-        return null;
+        String connectionId = getConnectionId(); // ← gets THIS thread's connectionId
+        synchronized (loginLock) {
+            User user = facade.login(dto.getUsername(), dto.getPassword());
+            boolean alreadyLoggedIn = sessions.values().stream()
+                    .anyMatch(s -> user.getId().equals(s.getUserId()));
+            if (alreadyLoggedIn)
+                throw new RuntimeException("User already logged in.");
+            sessions.get(connectionId).setUserId(user.getId());
+            Office office = facade.getOfficeById(user.getOfficeId());
+            return DtoUtils.toDto(user, office);
+        }
     }
 
     @Override
-    public synchronized void logout(LogoutDTO dto) {
-        loggedClients.remove(dto.getUserId());
+    public void logout(LogoutDTO dto) {
+        synchronized (loginLock) {
+            // just clear userId, session stays
+            sessions.values().stream()
+                    .filter(s -> dto.getUserId().equals(s.getUserId()))
+                    .findFirst()
+                    .ifPresent(s -> s.setUserId(null));
+        }
     }
 
-    public void forceLogout(Long userId) {
-        loggedClients.remove(userId);
+    public void forceLogout(String connectionId) {
+        // TCP dropped — whole session gone
+        sessions.remove(connectionId);
     }
 
     @Override
@@ -71,23 +97,27 @@ public class NetworkServiceImpl implements INetworkService {
     }
 
     @Override
-    public synchronized void makeReservation(MakeReservationDTO dto) {
-        List<Seat> seats = dto.getSeatIds().stream()
-                .map(facade::getSeatById)
-                .toList();
-        for (Seat s : seats)
-            if (s.isReserved())
-                throw new RuntimeException("One of the selected seats is already reserved.");
-        facade.makeReservationForSeats(dto.getClientName(), seats, dto.getUserId());
-        notifyPush();
+    public void makeReservation(MakeReservationDTO dto) {
+        synchronized (reservationLock) {
+            List<Seat> seats = dto.getSeatIds().stream()
+                    .map(facade::getSeatById)
+                    .toList();
+            for (Seat s : seats)
+                if (s.isReserved())
+                    throw new RuntimeException("Seat " + s.getNumber() + " is already reserved.");
+            facade.makeReservationForSeats(dto.getClientName(), seats, dto.getUserId());
+        }
+        notifyPush(); // outside lock — don't block other reservations while pushing
     }
 
     @Override
-    public synchronized void cancelReservation(CancelReservationDTO dto) {
-        if (facade.getReservationById(dto.getReservationId()) == null)
-            throw new RuntimeException("Reservation already cancelled.");
-        facade.cancelReservation(dto.getReservationId());
-        notifyPush();
+    public void cancelReservation(CancelReservationDTO dto) {
+        synchronized (reservationLock) {
+            if (facade.getReservationById(dto.getReservationId()) == null)
+                throw new RuntimeException("Reservation not found or already cancelled.");
+            facade.cancelReservation(dto.getReservationId());
+        }
+        notifyPush(); // outside lock
     }
 
     @Override
@@ -105,9 +135,9 @@ public class NetworkServiceImpl implements INetworkService {
         return DtoUtils.reservationsToDto(reservations, seatsPerReservation, users, tripIds);
     }
 
-        private void notifyPush() {
-            Packet pushPacket = PacketFactory.push();
-        loggedClients.values()
-                .forEach(target -> udpPusher.push(target, pushPacket));
+    private void notifyPush() {
+        sessions.values().forEach(session ->
+                pushExecutor.submit(() -> udpPusher.push(session.getUdpAddress()))
+        );
     }
 }

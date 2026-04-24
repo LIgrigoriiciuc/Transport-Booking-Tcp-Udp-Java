@@ -1,6 +1,7 @@
 package Network;
 
 import Domain.User;
+import Network.Dto.RequestDto.ConnectDTO;
 import Network.Dto.RequestDto.LoginDTO;
 import Network.Dto.RequestDto.LogoutDTO;
 import Network.Dto.RequestDto.SearchTripsDTO;
@@ -21,7 +22,8 @@ public class ClientHandler implements Runnable {
     private BufferedReader in;
     private PrintWriter out;
     private volatile boolean running = true;
-    private Long loggedUser;
+    private Long loggedUserId;
+    private String connectionId = null; // assigned at CONNECT
 
     private static final Gson gson = new Gson();
 
@@ -42,16 +44,15 @@ public class ClientHandler implements Runnable {
             try {
                 String line = in.readLine();
                 if (line == null) { running = false; break; }
-                System.out.println("[ClientHandler] ← " + line);
                 Packet request  = gson.fromJson(line, Packet.class);
                 Packet response = handleRequest(request);
-                if (response != null) sendToClient(response);  // only once
+                if (response != null) sendToClient(response);
             } catch (IOException e) {
                 running = false;
             }
         }
-        if (loggedUser != null)
-            service.forceLogout(loggedUser);
+        // TCP dropped — clean up everything for this connection
+        service.forceLogout(connectionId);
         close();
     }
 
@@ -59,24 +60,30 @@ public class ClientHandler implements Runnable {
         try {
             switch (req.getAction()) {
 
+                case CONNECT: {
+                    ConnectDTO dto = req.getConnectData();
+                    connectionId = service.registerConnection(
+                            socket.getInetAddress(), dto.getUdpPort());
+                    NetworkServiceImpl.setConnectionId(connectionId); // ← set for this thread
+                    return PacketFactory.ok();
+                }
+
                 case LOGIN: {
                     LoginDTO dto = req.getLoginData();
-                    UserDTO user = service.login(dto, socket.getInetAddress());
+                    UserDTO user = service.login(dto);
+                    loggedUserId = user.getId();
                     return PacketFactory.loginOk(user);
                 }
 
                 case LOGOUT: {
-                    LogoutDTO dto = req.getLogoutData();
-                    service.logout(dto);
-                    loggedUser = null;
-                    running = false;
+                    service.logout(req.getLogoutData());
+                    loggedUserId = null;
+                    // running stays true — connection alive, back to login
                     return PacketFactory.ok();
                 }
 
                 case SEARCH_TRIPS: {
-                    SearchTripsDTO dto = req.getSearchTripsData();
-                    String from = dto.getFrom(), to = dto.getTo();
-                    List<TripDTO> trips = service.searchTrips(dto);
+                    List<TripDTO> trips = service.searchTrips(req.getSearchTripsData());
                     return PacketFactory.trips(trips);
                 }
 
@@ -96,8 +103,8 @@ public class ClientHandler implements Runnable {
                 }
 
                 case GET_RESERVATIONS: {
-                    List<ReservationDTO> reservations = service.getAllReservations();
-                    return PacketFactory.reservations(reservations);
+                    List<ReservationDTO> res = service.getAllReservations();
+                    return PacketFactory.reservations(res);
                 }
 
                 default:
@@ -118,6 +125,6 @@ public class ClientHandler implements Runnable {
 
     private void close() {
         try { in.close(); out.close(); socket.close(); }
-        catch (IOException ignored) { }
+        catch (IOException ignored) {}
     }
 }

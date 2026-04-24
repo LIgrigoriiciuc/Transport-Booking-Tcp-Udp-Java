@@ -13,4 +13,7 @@ public class DateTimeUtils {
     public static LocalDateTime parse(String dt) {
         return dt != null ? LocalDateTime.parse(dt, FORMATTER) : null;
     }
+    private static LocalDateTime parseOrNull(String s) {
+        return (s == null || s.isBlank()) ? null : parse(s);
+    }
 }
