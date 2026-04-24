@@ -61,60 +61,45 @@ public class NetworkProxy implements INetworkService, IResponseReceiver, IPushRe
 
     @Override
     public UserDTO login(LoginDTO dto) {
-        LoginDTO dtoWithPort = new LoginDTO(
-                dto.getUsername(),
-                dto.getPassword(),
-                udpListener.getPort()
-        );
-        Packet response = sendAndReceive(PacketFactory.login(dtoWithPort));
-        if (response.getAction() == Action.ERROR)
-            throw new RuntimeException(response.getError());
-        return response.getUser();
+        LoginDTO dtoWithPort = new LoginDTO(dto.getUsername(), dto.getPassword(), udpListener.getPort());
+        return exchange(PacketFactory.login(dtoWithPort)).getUser();
     }
 
     @Override
     public void logout(LogoutDTO dto) {
-        Packet response = sendAndReceive(PacketFactory.logout(dto));
-        if (response.getAction() == Action.ERROR)
-            throw new RuntimeException(response.getError());
+        exchange(PacketFactory.logout(dto));
     }
 
     @Override
     public List<TripDTO> searchTrips(SearchTripsDTO dto) {
-        Packet response = sendAndReceive(PacketFactory.searchTrips(dto));
-        if (response.getAction() == Action.ERROR)
-            throw new RuntimeException(response.getError());
-        return response.getTrips();
+        return exchange(PacketFactory.searchTrips(dto)).getTrips();
     }
 
     @Override
     public List<SeatDTO> getSeatsForTrip(GetSeatsDTO dto) {
-        Packet response = sendAndReceive(PacketFactory.getSeats(dto));
-        if (response.getAction() == Action.ERROR)
-            throw new RuntimeException(response.getError());
-        return response.getSeats();
+        return exchange(PacketFactory.getSeats(dto)).getSeats();
     }
 
     @Override
     public void makeReservation(MakeReservationDTO dto) {
-        Packet response = sendAndReceive(PacketFactory.makeReservation(dto));
-        if (response.getAction() == Action.ERROR)
-            throw new RuntimeException(response.getError());
+        exchange(PacketFactory.makeReservation(dto));
     }
 
     @Override
     public void cancelReservation(CancelReservationDTO dto) {
-        Packet response = sendAndReceive(PacketFactory.cancelReservation(dto));
-        if (response.getAction() == Action.ERROR)
-            throw new RuntimeException(response.getError());
+        exchange(PacketFactory.cancelReservation(dto));
     }
 
     @Override
     public List<ReservationDTO> getAllReservations() {
-        Packet response = sendAndReceive(PacketFactory.getReservations());
+        return exchange(PacketFactory.getReservations()).getReservations();
+    }
+
+    private Packet exchange(Packet request) {
+        Packet response = sendAndReceive(request);
         if (response.getAction() == Action.ERROR)
             throw new RuntimeException(response.getError());
-        return response.getReservations();
+        return response;
     }
 
     public void disconnect() throws IOException {
