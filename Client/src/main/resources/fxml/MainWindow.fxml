@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns:fx="http://javafx.com/fxml" fx:controller="UI.MainWindowController" spacing="10">
+    <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <TextField fx:id="destFilter" promptText="Destination"/>
+        <TextField fx:id="startTime" promptText="Start (YYYY-MM-DD HH:mm)"/>
+        <TextField fx:id="endTime" promptText="End (YYYY-MM-DD HH:mm)"/>
+        <Button text="Filter" onAction="#handleFilter"/>
+        <Button text="Reset" onAction="#handleReset"/>
+        <Region HBox.hgrow="ALWAYS" />
+        <Button text="Logout" onAction="#handleLogout"/>
+    </HBox>
+
+    <SplitPane orientation="VERTICAL" VBox.vgrow="ALWAYS">
+        <VBox spacing="5">
+            <Label text="Trips" style="-fx-font-weight: bold;"/>
+            <TableView fx:id="tripTable" VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="colDest" text="Destination" prefWidth="150"/>
+                    <TableColumn fx:id="colTime" text="Departure" prefWidth="200"/>
+                    <TableColumn fx:id="colBus" text="Bus number" prefWidth="200"/>
+                </columns>
+            </TableView>
+        </VBox>
+
+        <HBox spacing="20">
+            <VBox spacing="10">
+                <Label text="Seats" style="-fx-font-weight: bold;"/>
+                <GridPane fx:id="seatGrid" hgap="5" vgap="5" alignment="CENTER"/>
+                <HBox spacing="5">
+                    <TextField fx:id="clientNameField" promptText="Client Name"/>
+                    <Button text="Reserve" onAction="#handleReserve"/>
+                </HBox>
+            </VBox>
+
+            <VBox spacing="10" HBox.hgrow="ALWAYS">
+                <Label text="Reservations" style="-fx-font-weight: bold;"/>
+                <ListView fx:id="resList" VBox.vgrow="ALWAYS"/>
+                <Button text="Delete" onAction="#handleDeleteRes" maxWidth="Infinity"/>
+            </VBox>
+        </HBox>
+    </SplitPane>
+</VBox>

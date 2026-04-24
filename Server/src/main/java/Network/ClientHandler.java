@@ -61,8 +61,8 @@ public class ClientHandler implements Runnable {
 
                 case LOGIN: {
                     LoginDTO dto = req.getLoginData();
-                    UdpTarget udpTarget = new UdpTarget(socket.getInetAddress(), dto.getUdpPort());
-                    UserDTO user = service.login(dto, udpTarget);return PacketFactory.loginOk(user);
+                    UserDTO user = service.login(dto, socket.getInetAddress());
+                    return PacketFactory.loginOk(user);
                 }
 
                 case LOGOUT: {

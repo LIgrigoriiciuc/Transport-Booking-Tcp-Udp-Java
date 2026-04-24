@@ -17,4 +17,6 @@ public class SeatDTO {
     public Long getId() { return id; }
     public int getNumber() { return number; }
     public boolean isReserved() { return reserved; }
+    public Long getTripId() { return tripId; }
+    public Long getReservationId() { return reservationId; }
 }

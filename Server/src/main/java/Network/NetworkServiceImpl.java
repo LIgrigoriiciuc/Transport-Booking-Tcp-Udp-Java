@@ -10,6 +10,7 @@ import Service.FacadeService;
 import Util.DateTimeUtils;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +22,7 @@ public class NetworkServiceImpl implements INetworkService {
 
     private final FacadeService facade;
     private final UdpPusher udpPusher;
-    private final Map<Long, UdpTarget> loggedClients = new ConcurrentHashMap<>();
+    private final Map<Long, InetSocketAddress> loggedClients = new ConcurrentHashMap<>();
     private final ExecutorService pushExecutor = Executors.newFixedThreadPool(5);
 
     public NetworkServiceImpl(FacadeService facade, UdpPusher udpPusher) {
@@ -29,11 +30,11 @@ public class NetworkServiceImpl implements INetworkService {
         this.udpPusher  = udpPusher;
     }
 
-    public synchronized UserDTO login(LoginDTO dto, UdpTarget udpTarget) {
+    public synchronized UserDTO login(LoginDTO dto, InetAddress clientIp) {
         User user = facade.login(dto.getUsername(), dto.getPassword());
         if (loggedClients.containsKey(user.getId()))
             throw new RuntimeException("User already logged in.");
-        loggedClients.put(user.getId(), udpTarget);
+        loggedClients.put(user.getId(), new InetSocketAddress(clientIp, dto.getUdpPort()));
         Office office = facade.getOfficeById(user.getOfficeId());
         return DtoUtils.toDto(user, office);
     }
@@ -100,8 +101,8 @@ public class NetworkServiceImpl implements INetworkService {
         return DtoUtils.reservationsToDto(reservations, seatsPerReservation, users, tripIds);
     }
 
-    private void notifyPush() {
-        Packet pushPacket = PacketFactory.push();
+        private void notifyPush() {
+            Packet pushPacket = PacketFactory.push();
         loggedClients.values()
                 .forEach(target -> udpPusher.push(target, pushPacket));
     }
