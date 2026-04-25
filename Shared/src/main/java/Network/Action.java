@@ -9,7 +9,6 @@ public enum Action {
     GET_RESERVATIONS,
     MAKE_RESERVATION,
     CANCEL_RESERVATION,
-    PUSH_UPDATE,
-    OK,
+    OK, //also login logout?
     ERROR
 }

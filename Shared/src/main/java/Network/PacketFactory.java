@@ -96,11 +96,7 @@ public class PacketFactory {
         p.setError(message);
         return p;
     }
-    public static Packet push() {
-        Packet p = new Packet();
-        p.setAction(Action.PUSH_UPDATE);
-        return p;
-    }
+
     public static Packet connect(ConnectDTO dto) {
         Packet p = new Packet();
         p.setAction(Action.CONNECT);
