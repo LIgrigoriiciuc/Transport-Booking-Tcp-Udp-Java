@@ -1,5 +1,6 @@
-package Controller;
+package GUI.Controller;
 
+import GUI.INavigationListener;
 import Network.Dto.RequestDto.LoginDTO;
 import Network.Dto.ResponseDto.UserDTO;
 import Network.INetworkService;

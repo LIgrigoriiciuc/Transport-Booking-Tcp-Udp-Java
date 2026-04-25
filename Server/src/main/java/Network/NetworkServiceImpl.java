@@ -8,11 +8,9 @@ import Network.Dto.ResponseDto.TripDTO;
 import Network.Dto.ResponseDto.UserDTO;
 import Service.FacadeService;
 import Util.DateTimeUtils;
-
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -106,7 +104,7 @@ public class NetworkServiceImpl implements INetworkService {
                 if (s.isReserved())
                     throw new RuntimeException("Seat " + s.getNumber() + " is already reserved.");
             facade.makeReservationForSeats(dto.getClientName(), seats, dto.getUserId());
-        }
+        }//aici baga thread
         notifyPush(); // outside lock — don't block other reservations while pushing
     }
 

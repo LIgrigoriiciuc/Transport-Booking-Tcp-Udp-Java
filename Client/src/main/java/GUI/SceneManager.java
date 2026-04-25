@@ -1,6 +1,7 @@
-package Controller;
+package GUI;
+import GUI.Controller.BaseController;
+import GUI.Controller.MainWindowController;
 import Network.Dto.ResponseDto.UserDTO;
-import Network.INetworkService;
 import Network.NetworkProxy;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;

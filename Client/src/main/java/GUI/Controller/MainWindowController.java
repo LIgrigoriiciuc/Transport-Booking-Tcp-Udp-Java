@@ -1,4 +1,5 @@
-package Controller;
+package GUI.Controller;
+import GUI.INavigationListener;
 import Network.Dto.RequestDto.*;
 import Network.Dto.ResponseDto.ReservationDTO;
 import Network.Dto.ResponseDto.SeatDTO;

@@ -6,7 +6,6 @@ public class User extends Entity<Long> {
     private String password;
     private String fullName;
     private Long officeId;
-    private Office office;
 
     public User(Long id, String username, String password, String fullName, Long officeId) {
         super(id);
@@ -30,10 +29,6 @@ public class User extends Entity<Long> {
 
     public String getFullName() {
         return fullName;
-    }
-
-    public void setOffice(Office office) {
-        this.office = office;
     }
 
     public Long getOfficeId() {

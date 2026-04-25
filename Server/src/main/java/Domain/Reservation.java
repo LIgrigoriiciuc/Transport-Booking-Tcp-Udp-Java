@@ -6,7 +6,6 @@ public class Reservation extends Entity<Long> {
     private String clientName;
     private LocalDateTime reservationTime;
     private Long userId;
-    private User user;
 
     public Reservation(String clientName, Long userId) {
         super();

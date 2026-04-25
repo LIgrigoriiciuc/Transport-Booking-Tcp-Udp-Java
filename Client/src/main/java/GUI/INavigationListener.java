@@ -1,4 +1,4 @@
-package Controller;
+package GUI;
 
 import Network.Dto.ResponseDto.UserDTO;
 

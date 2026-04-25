@@ -1,4 +1,4 @@
-import Controller.SceneManager;
+import GUI.SceneManager;
 import Network.NetworkProxy;
 import javafx.application.Application;
 import javafx.stage.Stage;
