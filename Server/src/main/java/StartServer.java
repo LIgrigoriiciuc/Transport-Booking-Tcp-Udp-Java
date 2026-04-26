@@ -4,11 +4,15 @@ import Network.UdpPusher;
 import Repository.*;
 import Service.*;
 import Service.TransactionsLogic.TransactionManager;
+import Util.ConnectionHolder;
 import Util.DatabaseConnection;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.SocketException;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Properties;
 
 public class StartServer {
@@ -26,7 +30,6 @@ public class StartServer {
         SeatService seatService = new SeatService(seatRepo);
         ReservationService resService = new ReservationService(resRepo, seatService);
         TransactionManager txManager = new TransactionManager();
-
         FacadeService facadeService = new FacadeService(userService, tripService, seatService, resService, officeService, txManager);
         try{
             UdpPusher udpPusher = new UdpPusher();
