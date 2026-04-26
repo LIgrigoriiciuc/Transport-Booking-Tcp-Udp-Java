@@ -44,7 +44,7 @@ public class LoginController implements BaseController {
         try {
             String username = usernameField.getText().trim();
             String password = passwordField.getText();
-            UserDTO user = service.login(new LoginDTO(username, password, 0));
+            UserDTO user = service.login(new LoginDTO(username, password));
             navigation.onLoginSuccess(user);
         }
         catch (Exception e) {

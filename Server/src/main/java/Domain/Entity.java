@@ -1,5 +1,7 @@
 package Domain;
 
+import java.util.Objects;
+
 public abstract class Entity<ID> {
     private ID id;
 

@@ -1,7 +1,7 @@
 package Network;
 
 public enum Action {
-    CONNECT,       // ← new, sends udpPort right after TCP connect
+    CONNECT, // sends udpPort right after TCP connect
     LOGIN,
     LOGOUT,
     SEARCH_TRIPS,
@@ -9,6 +9,6 @@ public enum Action {
     GET_RESERVATIONS,
     MAKE_RESERVATION,
     CANCEL_RESERVATION,
-    OK, //also login logout?
+    OK,
     ERROR
 }

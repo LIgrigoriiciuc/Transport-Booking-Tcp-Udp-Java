@@ -13,11 +13,9 @@ import java.util.Optional;
 public class AuthService extends GenericService<Long, User> {
 
     private static final int BCRYPT_ROUNDS = 12;
-    private final OfficeService officeService;
 
-    public AuthService(UserRepository repository, OfficeService officeService) {
+    public AuthService(UserRepository repository) {
         super(repository);
-        this.officeService = officeService;
     }
 
     public static String hashPassword(String plainPassword) {
@@ -51,10 +49,6 @@ public class AuthService extends GenericService<Long, User> {
         if (!valid) {
             throw new RuntimeException("Incorrect credentials.");
         }
-        Optional<Office> office = officeService.findById(user.getOfficeId());
-        Office o = office.orElseThrow(() -> new RuntimeException("Office not found"));
-        //aici trebuie de fapt find office by user nu asa!
-        user.setOffice(o);
         return user;
     }
 }

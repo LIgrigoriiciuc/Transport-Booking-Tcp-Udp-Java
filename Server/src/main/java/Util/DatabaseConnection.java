@@ -40,14 +40,12 @@ public class DatabaseConnection {
             config.setConnectionTimeout(30_000);
             config.setIdleTimeout(600_000);
             config.setMaxLifetime(1_800_000);
-
             dataSource = new HikariDataSource(config);
 
         } catch (IOException e) {
             throw new RuntimeException("Failed to initialize database connection pool", e);
         }
     }
-
     public static ConnectionHolder getConnection() throws SQLException {
         Connection txConn = transactionConnection.get();
         if (txConn != null)
@@ -58,6 +56,7 @@ public class DatabaseConnection {
     public static void close() {
         if (dataSource != null && !dataSource.isClosed()) {
             dataSource.close();
-            }
+        }
     }
+
 }

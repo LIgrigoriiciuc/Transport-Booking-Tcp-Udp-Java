@@ -19,9 +19,8 @@ public class ConcurrentServer {
         try {
             while (true) {
                 Socket client = serverSocket.accept();
-                Thread t = new Thread(new ClientHandler(service, client));
-                t.setDaemon(true);
-                t.start();
+                //~1KB instead of the 1MB Thread cost
+                Thread.ofVirtual().start(new ClientHandler(service, client));
             }
         } finally {
             serverSocket.close();

@@ -11,16 +11,12 @@ import java.util.Collection;
 public class UdpPusher implements AutoCloseable {
     private final DatagramSocket socket;
     public UdpPusher() throws SocketException {
-        socket = new DatagramSocket(); // ephemeral port, just for sending
+        socket = new DatagramSocket(); //ephemeral port
     }
     public void push(InetSocketAddress addr) {
         try {
             byte[] data = "PUSH".getBytes(StandardCharsets.UTF_8);
-            DatagramPacket packet = new DatagramPacket(
-                    data, data.length,
-                    addr.getAddress(),
-                    addr.getPort()
-            );
+            DatagramPacket packet = new DatagramPacket(data, data.length, addr.getAddress(), addr.getPort());
             socket.send(packet);
         } catch (IOException e) {
             System.err.println("UDP push failed to " + addr + ": " + e.getMessage());

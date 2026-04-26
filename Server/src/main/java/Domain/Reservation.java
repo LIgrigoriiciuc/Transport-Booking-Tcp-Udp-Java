@@ -14,9 +14,10 @@ public class Reservation extends Entity<Long> {
         this.userId = userId;
     }
 
-    public Reservation(Long id, String clientName, LocalDateTime reservationTime) {
+    public Reservation(Long id, String clientName, Long userId, LocalDateTime reservationTime) {
         super(id);
         this.clientName = clientName;
+        this.userId = userId;
         this.reservationTime = reservationTime;
     }
 
