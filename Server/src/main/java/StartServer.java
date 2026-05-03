@@ -6,16 +6,13 @@ import Service.*;
 import Service.TransactionsLogic.TransactionManager;
 import Util.ConnectionHolder;
 import Util.DatabaseConnection;
+import Util.DatabaseInitializer;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.SocketException;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Properties;
 
 public class StartServer {
@@ -25,6 +22,8 @@ public class StartServer {
     public static void main(String[] args) {
         int port = loadPort();
         logger.info("Starting server on port {}", port);
+        DatabaseInitializer.initializeDatabase();
+
         SeatRepository seatRepo = new SeatRepository();
         TripRepository tripRepo = new TripRepository();
         ReservationRepository resRepo = new ReservationRepository();

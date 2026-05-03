@@ -35,9 +35,9 @@ public class MainWindowController implements BaseController {
     private TripDTO selectedTrip;
     private static final double SEAT_SIZE = 52;
 
-    private static final String STYLE_FREE = "-fx-background-radius: 4;";
-    private static final String STYLE_SELECTED = "-fx-background-color: #607d8b; -fx-text-fill: white; -fx-background-radius: 4;";
-    private static final String STYLE_RESERVED = "-fx-background-color: #e53935; -fx-text-fill: white; -fx-background-radius: 4;";
+    private static final String STYLE_FREE = "";
+    private static final String STYLE_SELECTED = "-fx-background-color: #cfcfcf;";
+    private static final String STYLE_RESERVED = "-fx-background-color: #050505; -fx-text-fill: white;";
 
     @FXML
     public void initialize() {
@@ -125,7 +125,8 @@ public class MainWindowController implements BaseController {
             } else {
                 freeCount++;
                 if (keepSelectedIds.contains(seat.getId())) {
-                    selectedSeats.add(seat); // restore previous selection
+                    //restore previous selection
+                    selectedSeats.add(seat);
                     btn.setStyle(STYLE_SELECTED);
                 } else {
                     btn.setStyle(STYLE_FREE);
@@ -177,7 +178,8 @@ public class MainWindowController implements BaseController {
         try {
             service.makeReservation(new MakeReservationDTO(name, seatIds, currentUser.getId()));
             clientNameField.clear();
-            drawSeats(selectedTrip.getId(), Set.of()); // gui update, push triggers it again
+            // gui update, push triggers it again, but we want to clear the selection immediately
+            drawSeats(selectedTrip.getId(), Set.of());
         } catch (Exception e) {
             Set<Long> keep = selectedSeats.stream()
                     .map(SeatDTO::getId)
