@@ -35,7 +35,7 @@ public class MainWindowController implements BaseController {
     private TripDTO selectedTrip;
     private static final double SEAT_SIZE = 52;
 
-    private static final String STYLE_FREE     = "-fx-background-radius: 4;";
+    private static final String STYLE_FREE = "-fx-background-radius: 4;";
     private static final String STYLE_SELECTED = "-fx-background-color: #607d8b; -fx-text-fill: white; -fx-background-radius: 4;";
     private static final String STYLE_RESERVED = "-fx-background-color: #e53935; -fx-text-fill: white; -fx-background-radius: 4;";
 
@@ -177,14 +177,12 @@ public class MainWindowController implements BaseController {
         try {
             service.makeReservation(new MakeReservationDTO(name, seatIds, currentUser.getId()));
             clientNameField.clear();
-            drawSeats(selectedTrip.getId(), Set.of());
-            refreshReservations();
+            drawSeats(selectedTrip.getId(), Set.of()); // gui update, push triggers it again
         } catch (Exception e) {
             Set<Long> keep = selectedSeats.stream()
                     .map(SeatDTO::getId)
                     .collect(Collectors.toSet());
             drawSeats(selectedTrip.getId(), keep);
-            refreshReservations();
             showAlert("Reservation Failed", e.getMessage());
         }
     }
@@ -195,8 +193,6 @@ public class MainWindowController implements BaseController {
         if (selected == null) { showAlert("Nothing selected", "Select a reservation to cancel."); return; }
         try {
             service.cancelReservation(new CancelReservationDTO(selected.getId()));
-            refreshReservations();
-            refreshSeats();
         } catch (Exception e) {
             showAlert("Cancel Failed", e.getMessage());
         }
