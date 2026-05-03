@@ -52,7 +52,7 @@ The project is structured into three main modules:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/Transport-Booking-Tcp-Udp-Java.git
+   git clone https://github.com/LIgrigoriiciuc/Transport-Booking-Tcp-Udp-Java.git
    cd Transport-Booking-Tcp-Udp-Java
    ```
 
