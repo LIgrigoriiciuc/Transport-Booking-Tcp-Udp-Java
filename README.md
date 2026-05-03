@@ -124,10 +124,7 @@ Transport-Booking-Tcp-Udp-Java/
 
 ## Testing
 
-Run tests with:
-```bash
-./gradlew test
-```
+No unit tests are currently implemented. Future enhancements may include comprehensive test coverage for services, repositories, and network components.
 
 ## Contributing
 
