@@ -4,6 +4,9 @@ package Util;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
@@ -11,6 +14,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
 public class DatabaseConnection {
+
+    private static final Logger logger = LogManager.getLogger(DatabaseConnection.class);
+
     private static final HikariDataSource dataSource;
     private static final ThreadLocal<Connection> transactionConnection = new ThreadLocal<>();
 
@@ -43,6 +49,7 @@ public class DatabaseConnection {
             dataSource = new HikariDataSource(config);
 
         } catch (IOException e) {
+            logger.error("Failed to initialize database connection pool", e);
             throw new RuntimeException("Failed to initialize database connection pool", e);
         }
     }

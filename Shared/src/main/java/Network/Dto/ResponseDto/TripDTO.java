@@ -19,4 +19,8 @@ public class TripDTO {
     public String getTime() { return time; }
     public String getBusNumber() { return busNumber; }
     public Integer getFreeSeats() { return freeSeats; }
+
+    public void setFreeSeats(Integer freeSeats) {
+        this.freeSeats = freeSeats;
+    }
 }

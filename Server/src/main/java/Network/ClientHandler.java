@@ -7,12 +7,16 @@ import Network.Dto.ResponseDto.TripDTO;
 import Network.Dto.ResponseDto.UserDTO;
 import com.google.gson.Gson;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 import java.io.*;
 import java.net.Socket;
 import java.util.List;
 
 public class ClientHandler implements Runnable {
 
+    private static final Logger logger = LogManager.getLogger(ClientHandler.class);
     private final NetworkServiceImpl service;
     private final Socket socket;
     private BufferedReader in;
@@ -35,10 +39,12 @@ public class ClientHandler implements Runnable {
             try {
                 String line = in.readLine();
                 if (line == null) { running = false; break; }
+                logger.debug("Received request: {}", line);
                 Packet request  = gson.fromJson(line, Packet.class);
                 Packet response = handleRequest(request);
                 if (response != null) sendToClient(response);
             } catch (IOException e) {
+                logger.error("IOException in client handler", e);
                 running = false;
             }
         }
@@ -100,11 +106,13 @@ public class ClientHandler implements Runnable {
                     return PacketFactory.error("Unknown action: " + req.getAction());
             }
         } catch (Exception e) {
+            logger.error("Error handling request {}", req.getAction(), e);
             return PacketFactory.error(e.getMessage());
         }
     }
 
     private void sendToClient(Packet response) {
+        logger.debug("Sending response: {}", response);
         String line = gson.toJson(response);
         out.println(line);
         out.flush();

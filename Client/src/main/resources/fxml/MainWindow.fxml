@@ -3,7 +3,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
 
-<VBox xmlns:fx="http://javafx.com/fxml" fx:controller="UI.MainWindowController" spacing="10">
+<VBox xmlns:fx="http://javafx.com/fxml" fx:controller="GUI.Controller.MainWindowController" spacing="10">
     <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
 
     <HBox spacing="10" alignment="CENTER_LEFT">
@@ -24,6 +24,7 @@
                     <TableColumn fx:id="colDest" text="Destination" prefWidth="150"/>
                     <TableColumn fx:id="colTime" text="Departure" prefWidth="200"/>
                     <TableColumn fx:id="colBus" text="Bus number" prefWidth="200"/>
+                    <TableColumn fx:id="colFreeSeats" text="Free Seats"/>
                 </columns>
             </TableView>
         </VBox>
@@ -41,7 +42,7 @@
             <VBox spacing="10" HBox.hgrow="ALWAYS">
                 <Label text="Reservations" style="-fx-font-weight: bold;"/>
                 <ListView fx:id="resList" VBox.vgrow="ALWAYS"/>
-                <Button text="Delete" onAction="#handleDeleteRes" maxWidth="Infinity"/>
+                <Button text="Delete" onAction="#handleCancelReservation" maxWidth="Infinity"/>
             </VBox>
         </HBox>
     </SplitPane>

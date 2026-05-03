@@ -5,12 +5,18 @@ import Network.Dto.ResponseDto.ReservationDTO;
 import Network.Dto.ResponseDto.SeatDTO;
 import Network.Dto.ResponseDto.TripDTO;
 import Network.Dto.ResponseDto.UserDTO;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class NetworkProxy implements INetworkService, IResponseReceiver, IPushReceiver {
+
+    private static final Logger logger = LogManager.getLogger(NetworkProxy.class);
     private final String host;
     private final int port;
     private TcpConnection tcp;
@@ -30,6 +36,7 @@ public class NetworkProxy implements INetworkService, IResponseReceiver, IPushRe
         try {
             responses.put(p);
         } catch (InterruptedException e) {
+            logger.error("Interrupted while enqueuing response", e);
             Thread.currentThread().interrupt();
         }
     }
@@ -39,15 +46,20 @@ public class NetworkProxy implements INetworkService, IResponseReceiver, IPushRe
     }
 
     private Packet sendAndReceive(Packet request) {
+        logger.debug("Sending packet: {}", request);
         tcp.send(request);
         try {
-            return responses.take(); // blocks until ReaderThread puts something in
+            Packet response = responses.take();
+            logger.debug("Received response");
+            return response;
         } catch (InterruptedException e) {
+            logger.error("Interrupted waiting for response", e);
             Thread.currentThread().interrupt();
             throw new RuntimeException("Interrupted waiting for response");
         }
     }
     public void connect() throws IOException {
+        logger.info("Connecting to server {}:{}", host, port);
         tcp = new TcpConnection(host, port);
 
         udpListener = new UdpListenerThread(0, this);
@@ -63,8 +75,11 @@ public class NetworkProxy implements INetworkService, IResponseReceiver, IPushRe
         // tell server our UDP port immediately — once, not at every login
         Packet connectPacket = PacketFactory.connect(new ConnectDTO(udpListener.getPort()));
         Packet response = sendAndReceive(connectPacket);
-        if (response.getAction() == Action.ERROR)
+        if (response.getAction() == Action.ERROR) {
+            logger.error("Connection rejected: {}", response.getError());
             throw new IOException("Connection rejected: " + response.getError());
+        }
+        logger.info("Connected successfully");
     }
 
     @Override
@@ -105,12 +120,15 @@ public class NetworkProxy implements INetworkService, IResponseReceiver, IPushRe
 
     private Packet exchange(Packet request) {
         Packet response = sendAndReceive(request);
-        if (response.getAction() == Action.ERROR)
+        if (response.getAction() == Action.ERROR) {
+            logger.error("Server error: {}", response.getError());
             throw new RuntimeException(response.getError());
+        }
         return response;
     }
 
     public void disconnect() throws IOException {
+        logger.info("Disconnecting from server");
         if (readerThread != null) readerThread.stop();
         if (udpListener != null) udpListener.stop();
         if (tcp != null) tcp.close();

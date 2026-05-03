@@ -7,6 +7,9 @@ import Service.TransactionsLogic.TransactionManager;
 import Util.ConnectionHolder;
 import Util.DatabaseConnection;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.SocketException;
@@ -16,9 +19,12 @@ import java.sql.Statement;
 import java.util.Properties;
 
 public class StartServer {
+
+    private static final Logger logger = LogManager.getLogger(StartServer.class);
     private static final int DEFAULT_PORT = 65535;
     public static void main(String[] args) {
         int port = loadPort();
+        logger.info("Starting server on port {}", port);
         SeatRepository seatRepo = new SeatRepository();
         TripRepository tripRepo = new TripRepository();
         ReservationRepository resRepo = new ReservationRepository();
@@ -36,6 +42,7 @@ public class StartServer {
             NetworkServiceImpl networkService = new NetworkServiceImpl(facadeService, udpPusher);
             ConcurrentServer server = new ConcurrentServer(port, networkService);
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                logger.info("Stopping server");
                 try {
                     server.stop();
                 } catch (IOException ignored) {}
@@ -44,7 +51,9 @@ public class StartServer {
             }));
             server.start();
         }
-        catch (IOException ignored){}
+        catch (IOException ignored){
+            logger.error("Failed to start server", ignored);
+        }
     }
     private static int loadPort() {
         Properties props = new Properties();
@@ -61,5 +70,3 @@ public class StartServer {
         }
     }
 }
-
-

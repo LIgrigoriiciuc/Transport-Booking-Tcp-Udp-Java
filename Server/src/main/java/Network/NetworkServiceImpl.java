@@ -8,6 +8,10 @@ import Network.Dto.ResponseDto.TripDTO;
 import Network.Dto.ResponseDto.UserDTO;
 import Service.FacadeService;
 import Util.DateTimeUtils;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.LocalDateTime;
@@ -19,6 +23,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class NetworkServiceImpl implements INetworkService {
+
+    private static final Logger logger = LogManager.getLogger(NetworkServiceImpl.class);
 
     private final FacadeService facade;
     private final UdpPusher udpPusher;
@@ -44,6 +50,7 @@ public class NetworkServiceImpl implements INetworkService {
     public String registerConnection(InetAddress ip, int udpPort) {
         String id = UUID.randomUUID().toString();
         sessions.put(id, new ConnectionSession(new InetSocketAddress(ip, udpPort)));
+        logger.info("Registered connection from {}:{}", ip, udpPort);
         return id;
     }
 
@@ -53,10 +60,13 @@ public class NetworkServiceImpl implements INetworkService {
         User user = facade.login(dto.getUsername(), dto.getPassword());
         Office office = facade.getOfficeById(user.getOfficeId());
         synchronized (loginLock) {
-            if (userIndex.putIfAbsent(user.getId(), connectionId) != null)
+            if (userIndex.putIfAbsent(user.getId(), connectionId) != null) {
+                logger.warn("User {} already logged in", user.getId());
                 throw new RuntimeException("User already logged in.");
+            }
             sessions.get(connectionId).setUserId(user.getId());
         }
+        logger.info("User {} logged in", user.getUsername());
         return DtoUtils.toDto(user, office);
     }
 
@@ -67,6 +77,7 @@ public class NetworkServiceImpl implements INetworkService {
             if (connectionId != null)
                 sessions.get(connectionId).setUserId(null);
         }
+        logger.info("User {} logged out", dto.getUserId());
     }
 
     public void forceLogout(String connectionId) {
@@ -77,6 +88,7 @@ public class NetworkServiceImpl implements INetworkService {
             if (session != null && session.getUserId() != null)
                 userIndex.remove(session.getUserId());
         }
+        logger.info("Forced logout for connection {}", connectionId);
     }
 
     @Override
@@ -98,20 +110,26 @@ public class NetworkServiceImpl implements INetworkService {
         synchronized (reservationLock) {
             List<Seat> seats = dto.getSeatIds().stream().map(facade::getSeatById).toList();
             for (Seat s : seats)
-                if (s.isReserved())
+                if (s.isReserved()) {
+                    logger.warn("Seat {} already reserved", s.getNumber());
                     throw new RuntimeException("Seat " + s.getNumber() + " is already reserved.");
+                }
             facade.makeReservationForSeats(dto.getClientName(), seats, dto.getUserId());
         }
+        logger.info("Reservation made by user {}", dto.getUserId());
         notifyPush();
     }
 
     @Override
     public void cancelReservation(CancelReservationDTO dto) {
         synchronized (reservationLock) {
-            if (facade.getReservationById(dto.getReservationId()) == null)
+            if (facade.getReservationById(dto.getReservationId()) == null) {
+                logger.warn("Reservation {} not found", dto.getReservationId());
                 throw new RuntimeException("Reservation not found or already cancelled.");
+            }
             facade.cancelReservation(dto.getReservationId());
         }
+        logger.info("Reservation {} cancelled", dto.getReservationId());
         notifyPush();
     }
 

@@ -1,6 +1,9 @@
 package Network;
 import com.google.gson.Gson;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -12,6 +15,7 @@ public class TcpConnection {
     private PrintWriter writer;
     private BufferedReader reader;
     private static final Gson gson = new Gson();
+    private static final Logger logger = LogManager.getLogger(TcpConnection.class);
 
     public TcpConnection(String host, int port) throws IOException {
         socket = new Socket(host, port);
@@ -20,6 +24,7 @@ public class TcpConnection {
     }
 
     public void send(Packet p) {
+        logger.debug("Sending TCP packet: {}", p);
         String json = gson.toJson(p);
         writer.println(json);
         writer.flush();

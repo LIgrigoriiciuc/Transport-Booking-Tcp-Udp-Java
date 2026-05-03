@@ -1,10 +1,12 @@
 plugins {
     id("java")
     id("application")
+    id("org.openjfx.javafxplugin") version "0.1.0"
 }
 
-application {
-    mainClass = "StartServer"
+javafx {
+    version = "21"
+    modules("javafx.controls", "javafx.fxml")
 }
 
 group = "org.example"
@@ -18,13 +20,24 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.10.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    implementation("org.mindrot:jbcrypt:0.4")
-    implementation("com.zaxxer:HikariCP:5.1.0")
-    implementation("org.xerial:sqlite-jdbc:3.45.1.0")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation(project(":Shared"))
+    implementation 'org.apache.logging.log4j:log4j-api:2.23.1'
+    implementation 'org.apache.logging.log4j:log4j-core:2.23.1'
 }
 
 tasks.test {
     useJUnitPlatform()
+}
+
+application {
+    mainClass = "StartClient"
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDirs = ['src/main/resources']
+        }
+    }
 }

@@ -14,6 +14,8 @@ import javafx.scene.layout.GridPane;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class MainWindowController implements BaseController {
     @FXML private TableView<TripDTO> tripTable;
@@ -31,6 +33,11 @@ public class MainWindowController implements BaseController {
 
     private final List<SeatDTO> selectedSeats = new ArrayList<>();
     private TripDTO selectedTrip;
+    private static final double SEAT_SIZE = 52;
+
+    private static final String STYLE_FREE     = "-fx-background-radius: 4;";
+    private static final String STYLE_SELECTED = "-fx-background-color: #607d8b; -fx-text-fill: white; -fx-background-radius: 4;";
+    private static final String STYLE_RESERVED = "-fx-background-color: #e53935; -fx-text-fill: white; -fx-background-radius: 4;";
 
     @FXML
     public void initialize() {
@@ -44,9 +51,9 @@ public class MainWindowController implements BaseController {
                 new SimpleStringProperty(data.getValue().getFreeSeats() + " free"));
 
         tripTable.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal != null) {
-                selectedTrip = newVal;
-                drawSeats(newVal.getId());
+            if (newVal != null && (oldVal == null || !newVal.getId().equals(oldVal.getId()))) {
+                selectedTrip = newVal; // only fetch seats when the trip actually changed
+                drawSeats(newVal.getId(), Set.of());
             }
         });
 
@@ -69,7 +76,6 @@ public class MainWindowController implements BaseController {
     @Override
     public void setService(INetworkService service) {
         this.service = service;
-        // set push refresh if proxy
         if (service instanceof NetworkProxy proxy) {
             proxy.setOnPush(() -> javafx.application.Platform.runLater(() -> {
                 refreshSeats();
@@ -96,54 +102,89 @@ public class MainWindowController implements BaseController {
         this.currentUser = user;
     }
 
-
-    private void drawSeats(Long tripId) {
+    private void drawSeats(Long tripId, Set<Long> keepSelectedIds) {
         seatGrid.getChildren().clear();
         selectedSeats.clear();
+
         List<SeatDTO> seats = service.getSeatsForTrip(new GetSeatsDTO(tripId));
         seats.sort((a, b) -> Integer.compare(a.getNumber(), b.getNumber()));
-        int cols = 4;
+
+        int cols = 3;
+        int freeCount = 0;
+
         for (int i = 0; i < seats.size(); i++) {
             SeatDTO seat = seats.get(i);
             Button btn = new Button(String.valueOf(seat.getNumber()));
+            btn.setMinSize(SEAT_SIZE, SEAT_SIZE);
+            btn.setMaxSize(SEAT_SIZE, SEAT_SIZE);
+
             if (seat.isReserved()) {
                 btn.setDisable(true);
-                btn.setStyle("-fx-background-color: red; -fx-text-fill: white;");
+                btn.setStyle(STYLE_RESERVED);
                 btn.setTooltip(new Tooltip("Reservation #" + seat.getReservationId()));
             } else {
+                freeCount++;
+                if (keepSelectedIds.contains(seat.getId())) {
+                    selectedSeats.add(seat); // restore previous selection
+                    btn.setStyle(STYLE_SELECTED);
+                } else {
+                    btn.setStyle(STYLE_FREE);
+                }
                 btn.setOnAction(e -> toggleSeat(btn, seat));
             }
+
             seatGrid.add(btn, i % cols, i / cols);
+        }
+        if (selectedTrip != null) {
+            selectedTrip.setFreeSeats(freeCount);
+            tripTable.refresh();
         }
     }
 
     private void toggleSeat(Button btn, SeatDTO seat) {
         if (selectedSeats.contains(seat)) {
             selectedSeats.remove(seat);
-            btn.setStyle("");
+            btn.setStyle(STYLE_FREE);
         } else {
             selectedSeats.add(seat);
-            btn.setStyle("-fx-background-color: grey;");
+            btn.setStyle(STYLE_SELECTED);
         }
     }
+
     private void refreshSeats() {
-        if (selectedTrip != null)
-            drawSeats(selectedTrip.getId());
+        if (selectedTrip == null) return;
+        Set<Long> keep = selectedSeats.stream()
+                .map(SeatDTO::getId)
+                .collect(Collectors.toSet());
+        drawSeats(selectedTrip.getId(), keep);
     }
+
 
     @FXML
     private void handleReserve() {
-        if (selectedTrip == null) { showAlert("No trip selected", "Select a trip first."); return; }
-        if (selectedSeats.isEmpty()) { showAlert("No seats selected", "Select at least one seat."); return; }
+        if (selectedTrip == null)    {
+            showAlert("No trip selected", "Select a trip first.");
+            return; }
+        if (selectedSeats.isEmpty()) {
+            showAlert("No seats selected","Select at least one seat.");
+            return; }
         String name = clientNameField.getText().trim();
-        if (name.isBlank()) { showAlert("Missing name", "Enter client name."); return; }
+        if (name.isBlank())          {
+            showAlert("Missing name","Enter client name.");
+            return; }
+
+        List<Long> seatIds = selectedSeats.stream().map(SeatDTO::getId).toList();
         try {
-            List<Long> seatIds = selectedSeats.stream().map(SeatDTO::getId).toList();
             service.makeReservation(new MakeReservationDTO(name, seatIds, currentUser.getId()));
             clientNameField.clear();
-            drawSeats(selectedTrip.getId());
+            drawSeats(selectedTrip.getId(), Set.of());
             refreshReservations();
         } catch (Exception e) {
+            Set<Long> keep = selectedSeats.stream()
+                    .map(SeatDTO::getId)
+                    .collect(Collectors.toSet());
+            drawSeats(selectedTrip.getId(), keep);
+            refreshReservations();
             showAlert("Reservation Failed", e.getMessage());
         }
     }
@@ -165,7 +206,7 @@ public class MainWindowController implements BaseController {
     private void handleFilter() {
         String dest = destFilter.getText();
         String from = startTime.getText();
-        String to = endTime.getText();
+        String to   = endTime.getText();
         try {
             List<TripDTO> filtered = service.searchTrips(new SearchTripsDTO(dest, from, to));
             tripTable.getItems().setAll(filtered);
@@ -173,7 +214,6 @@ public class MainWindowController implements BaseController {
             showAlert("Filter Error", "Dates must be: yyyy-MM-dd HH:mm");
         }
     }
-
 
     @FXML
     private void handleReset() {

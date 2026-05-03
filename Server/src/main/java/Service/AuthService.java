@@ -7,10 +7,15 @@ import Repository.Filter;
 import Repository.UserRepository;
 import org.mindrot.jbcrypt.BCrypt;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 import java.util.List;
 import java.util.Optional;
 
 public class AuthService extends GenericService<Long, User> {
+
+    private static final Logger logger = LogManager.getLogger(AuthService.class);
 
     private static final int BCRYPT_ROUNDS = 12;
 
@@ -26,12 +31,14 @@ public class AuthService extends GenericService<Long, User> {
     }
     public User login(String username, String password) {
         if (username == null || username.isBlank() || password == null || password.isBlank()) {
+            logger.warn("Username and password are required");
             throw new IllegalArgumentException("Username and password are required.");
         }
         Filter f = new Filter();
         f.addFilter("username", username);
         List<User> matches = repository.filter(f);
         if (matches.isEmpty()) {
+            logger.warn("Incorrect credentials for username {}", username);
             throw new RuntimeException("Incorrect credentials.");
         }
         User user = matches.get(0);
@@ -47,8 +54,10 @@ public class AuthService extends GenericService<Long, User> {
             }
         }
         if (!valid) {
+            logger.warn("Incorrect credentials for username {}", username);
             throw new RuntimeException("Incorrect credentials.");
         }
+        logger.info("User {} logged in", username);
         return user;
     }
 }

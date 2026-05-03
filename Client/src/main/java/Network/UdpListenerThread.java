@@ -1,5 +1,8 @@
 package Network;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -7,6 +10,8 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 
 public class UdpListenerThread implements Runnable {
+
+    private static final Logger logger = LogManager.getLogger(UdpListenerThread.class);
     private final DatagramSocket socket;
     private final IPushReceiver receiver;
     private volatile boolean running = true;
@@ -26,11 +31,12 @@ public class UdpListenerThread implements Runnable {
             try {
                 DatagramPacket packet = new DatagramPacket(buf, buf.length);
                 socket.receive(packet);
+                logger.debug("Received UDP push packet");
                 receiver.onPushReceived();
             } catch (SocketTimeoutException e) {
                 // normal, loop again
             } catch (IOException e) {
-                if (running) e.printStackTrace();
+                if (running) logger.error("IOException in UDP listener", e);
             }
         }
         socket.close();

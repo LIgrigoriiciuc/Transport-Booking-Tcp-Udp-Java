@@ -3,12 +3,16 @@ import Network.NetworkProxy;
 import javafx.application.Application;
 import javafx.stage.Stage;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
 public class StartClient extends Application {
 
+    private static final Logger logger = LogManager.getLogger(StartClient.class);
     private static final String DEFAULT_HOST = "localhost";
     private static final int DEFAULT_PORT = 65535;
     private NetworkProxy proxy;
@@ -25,19 +29,20 @@ public class StartClient extends Application {
                 host = props.getProperty("server.host", DEFAULT_HOST);
                 port = Integer.parseInt(props.getProperty("server.port", String.valueOf(DEFAULT_PORT)));
             } else {
-                System.err.println("client.properties not found, using defaults");
+                logger.warn("client.properties not found, using defaults");
             }
         } catch (IOException e) {
-            System.err.println("Error reading client.properties: " + e.getMessage());
+            logger.warn("Error reading client.properties", e);
         } catch (NumberFormatException e) {
-            System.err.println("Invalid port in client.properties, using default: " + DEFAULT_PORT);
+            logger.warn("Invalid port in client.properties, using default", e);
         }
 
         proxy = new NetworkProxy(host, port);
         try {
             proxy.connect();
+            logger.info("Connected to server at {}:{}", host, port);
         } catch (IOException e) {
-            System.err.println("Cannot connect to server: " + e.getMessage());
+            logger.error("Failed to connect to server", e);
             return;
         }
 
@@ -48,12 +53,14 @@ public class StartClient extends Application {
             try {
                 proxy.disconnect();
             } catch (IOException e) {
+                logger.error("Error disconnecting from server", e);
                 throw new RuntimeException(e);
             }
         });
     }
 
     public static void main(String[] args) {
+        logger.info("Starting client application");
         launch(args);
     }
 }

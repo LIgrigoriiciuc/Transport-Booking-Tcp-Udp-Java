@@ -5,6 +5,9 @@ import Domain.Entity;
 import Util.ConnectionHolder;
 import Util.DatabaseConnection;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -14,10 +17,14 @@ import java.util.List;
 import java.util.Optional;
 
 public abstract class GenericRepository<ID,E extends Entity<ID>> implements IRepository<ID, E> {
+
+    private static final Logger logger = LogManager.getLogger(GenericRepository.class);
+
     @Override
     public List<E> filter(Filter filter){
         List<E> entities = new ArrayList<>();
         String sql = "SELECT * FROM " + getTableName() + " " + filter.buildWhere();
+        logger.debug("Executing filter query: {}", sql);
         try (ConnectionHolder holder = DatabaseConnection.getConnection();
              PreparedStatement ps = holder.get().prepareStatement(sql)) {
             filter.applyParameters(ps);
@@ -26,6 +33,7 @@ public abstract class GenericRepository<ID,E extends Entity<ID>> implements IRep
                     entities.add(mapResultSetToEntity(rs));
             }
         } catch (SQLException e) {
+            logger.error("Error filtering {}", getTableName(), e);
             throw new RuntimeException("Error filtering " + getTableName(), e);
         }
         return entities;
@@ -34,6 +42,7 @@ public abstract class GenericRepository<ID,E extends Entity<ID>> implements IRep
     public List<E> getAll() {
         List<E> entities = new ArrayList<>();
         String sql = "SELECT * FROM " + getTableName();
+        logger.debug("Executing getAll query: {}", sql);
 
         try (ConnectionHolder holder = DatabaseConnection.getConnection();
              PreparedStatement ps = holder.get().prepareStatement(sql);
@@ -42,6 +51,7 @@ public abstract class GenericRepository<ID,E extends Entity<ID>> implements IRep
                 entities.add(mapResultSetToEntity(rs));
             }
         } catch (SQLException e) {
+            logger.error("Error fetching all from {}", getTableName(), e);
             throw new RuntimeException("Error fetching all from " + getTableName(), e);
         }
         return entities;
@@ -50,6 +60,7 @@ public abstract class GenericRepository<ID,E extends Entity<ID>> implements IRep
     @Override
     public Optional<E> findById(ID id) {
         String sql = "SELECT * FROM " + getTableName() + " WHERE id = ?";
+        logger.debug("Executing findById query: {}", sql);
         try (ConnectionHolder holder = DatabaseConnection.getConnection();
              PreparedStatement ps = holder.get().prepareStatement(sql)) {
             ps.setObject(1, id);
@@ -59,6 +70,7 @@ public abstract class GenericRepository<ID,E extends Entity<ID>> implements IRep
             }
             return Optional.empty();
         } catch (SQLException e) {
+            logger.error("Error finding by id in {}", getTableName(), e);
             throw new RuntimeException("Error finding by id in " + getTableName(), e);
         }
     }
@@ -66,6 +78,7 @@ public abstract class GenericRepository<ID,E extends Entity<ID>> implements IRep
     @Override
     public void add(E e) {
         String sql = buildInsertSql();
+        logger.debug("Executing add query: {}", sql);
         try (ConnectionHolder holder = DatabaseConnection.getConnection();
              PreparedStatement ps = holder.get().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             setInsertParameters(ps, e);
@@ -78,6 +91,7 @@ public abstract class GenericRepository<ID,E extends Entity<ID>> implements IRep
                     throw new SQLException("Insert failed, no ID obtained.");
             }
         } catch (SQLException ex) {
+            logger.error("Error adding to {}", getTableName(), ex);
             throw new RuntimeException("Error adding to " + getTableName(), ex);
         }
     }
@@ -85,11 +99,13 @@ public abstract class GenericRepository<ID,E extends Entity<ID>> implements IRep
     @Override
     public boolean update(E e) {
         String sql = buildUpdateSql();
+        logger.debug("Executing update query: {}", sql);
         try (ConnectionHolder holder = DatabaseConnection.getConnection();
              PreparedStatement ps = holder.get().prepareStatement(sql)) {
             setUpdateParameters(ps, e);
             return ps.executeUpdate() > 0;
         } catch (SQLException ex) {
+            logger.error("Error updating {}", getTableName(), ex);
             throw new RuntimeException("Error updating " + getTableName(), ex);
         }
     }
@@ -97,11 +113,13 @@ public abstract class GenericRepository<ID,E extends Entity<ID>> implements IRep
     @Override
     public boolean remove(ID id) {
         String sql = "DELETE FROM " + getTableName() + " WHERE id = ?";
+        logger.debug("Executing remove query: {}", sql);
         try (ConnectionHolder holder = DatabaseConnection.getConnection();
              PreparedStatement ps = holder.get().prepareStatement(sql)) {
             ps.setObject(1, id);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
+            logger.error("Error removing from {}", getTableName(), e);
             throw new RuntimeException("Error removing from " + getTableName(), e);
         }
     }

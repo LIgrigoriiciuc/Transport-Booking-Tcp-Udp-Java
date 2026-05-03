@@ -8,12 +8,16 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 public class SceneManager implements INavigationListener {
 
     private final NetworkProxy proxy;
     private Stage mainStage;
     private BaseController currentController;
     private UserDTO currentUser;
+    private static final Logger logger = LogManager.getLogger(SceneManager.class);
 
     public SceneManager(NetworkProxy proxy) {
         this.proxy = proxy;
@@ -22,11 +26,13 @@ public class SceneManager implements INavigationListener {
     @Override
     public void onLoginSuccess(UserDTO user) {
         this.currentUser = user;
+        logger.info("Login successful for user {}", user.getFullName());
         showMainWindow(mainStage, user);
     }
 
     @Override
     public void onLogout() {
+        logger.info("User logged out");
         showLogin(mainStage);
     }
     public void showLogin(Stage stage) {
@@ -62,7 +68,9 @@ public class SceneManager implements INavigationListener {
             stage.setTitle(title);
             stage.setScene(new Scene(root, width, height));
             stage.show();
+            logger.info("Scene loaded: {}", title);
         } catch (Exception e) {
+            logger.error("Failed to load FXML: {}", fxmlPath, e);
             throw new RuntimeException("Error loading: " + fxmlPath, e);
         }
     }
